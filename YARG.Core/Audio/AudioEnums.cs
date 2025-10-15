@@ -23,6 +23,27 @@
         VoxSample,
     }
 
+    public static class SongStemExtensions
+    {
+        public static bool IsDrums(this SongStem stem)
+        {
+            return stem is SongStem.Drums
+                or SongStem.Drums1
+                or SongStem.Drums2
+                or SongStem.Drums3
+                or SongStem.Drums4
+                or SongStem.DrumSfx;
+        }
+
+        public static bool IsVocals(this SongStem stem)
+        {
+            return stem is SongStem.Vocals
+                or SongStem.Vocals1
+                or SongStem.Vocals2
+                or SongStem.VoxSample;
+        }
+    }
+
     public enum SfxSample
     {
         NoteMiss,

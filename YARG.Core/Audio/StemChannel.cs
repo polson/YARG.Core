@@ -2,15 +2,23 @@ using System;
 
 namespace YARG.Core.Audio
 {
-    public abstract class StemChannel : IDisposable
+    public interface StemAudioController
+    {
+        void SetWhammyPitch(float percent);
+        float GetWhammyPitch();
+        void SetVolume(double volume);
+        void SetReverb(bool reverb);
+    }
+
+    public abstract class StemChannel : StemAudioController, IDisposable
     {
         public const double MINIMUM_STEM_VOLUME = 0.15;
 
         private bool _disposed;
 
-        private readonly bool _clampVolume;
+        private readonly   bool         _clampVolume;
         protected readonly AudioManager _manager;
-        public readonly SongStem Stem;
+        public readonly    SongStem     Stem;
 
         protected StemChannel(AudioManager manager, SongStem stem, bool clampVolume)
         {
@@ -43,6 +51,7 @@ namespace YARG.Core.Audio
                 {
                     return GetWhammyPitch_Internal();
                 }
+
                 return 0.0f;
             }
         }
@@ -66,6 +75,7 @@ namespace YARG.Core.Audio
                 {
                     return GetPosition_Internal();
                 }
+
                 return 0.0;
             }
         }
@@ -81,7 +91,7 @@ namespace YARG.Core.Audio
             }
         }
 
-        private void SetVolume(double volume)
+        public void SetVolume(double volume, float fadeDurationMs = 0.0f)
         {
             lock (this)
             {
@@ -91,12 +101,13 @@ namespace YARG.Core.Audio
                     {
                         volume = MINIMUM_STEM_VOLUME;
                     }
-                    SetVolume_Internal(volume);
+
+                    SetVolume_Internal(volume, fadeDurationMs);
                 }
             }
         }
 
-        private void SetReverb(bool reverb)
+        public void SetReverb(bool reverb)
         {
             lock (this)
             {
@@ -113,11 +124,16 @@ namespace YARG.Core.Audio
         protected abstract double GetPosition_Internal();
         protected abstract void SetSpeed_Internal(float speed, bool shiftPitch);
 
-        protected abstract void SetVolume_Internal(double newVolume);
+        protected abstract void SetVolume_Internal(double newVolume, float fadeDuration);
         protected abstract void SetReverb_Internal(bool reverb);
 
-        protected virtual void DisposeManagedResources() { }
-        protected virtual void DisposeUnmanagedResources() { }
+        protected virtual void DisposeManagedResources()
+        {
+        }
+
+        protected virtual void DisposeUnmanagedResources()
+        {
+        }
 
         private void Dispose(bool disposing)
         {
@@ -130,6 +146,7 @@ namespace YARG.Core.Audio
                     {
                         DisposeManagedResources();
                     }
+
                     DisposeUnmanagedResources();
                     _disposed = true;
                 }
