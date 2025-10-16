@@ -376,5 +376,41 @@ namespace YARG.Core.Audio
                 _instance.SetBufferLength(length);
             }
         }
+
+        public static void LoadDrumSfx()
+        {
+            lock (_instanceLock)
+            {
+                if (_instance == null)
+                {
+                    throw new NotInitializedException();
+                }
+                _instance.LoadDrumSfx();
+            }
+        }
+
+        public static void LoadVox()
+        {
+            lock (_instanceLock)
+            {
+                if (_instance == null)
+                {
+                    throw new NotInitializedException();
+                }
+                _instance.LoadVox();
+            }
+        }
+
+        public static void LoadSfx()
+        {
+            lock (_instanceLock)
+            {
+                if (_instance == null)
+                {
+                    throw new NotInitializedException();
+                }
+                _instance.LoadSfx();
+            }
+        }
     }
 }

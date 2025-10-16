@@ -90,6 +90,10 @@ namespace YARG.Core.Audio
 
         protected abstract void SetBufferLength_Internal(int length);
 
+        protected internal abstract void LoadDrumSfx();
+        protected internal  abstract void LoadSfx();
+        protected internal  abstract void LoadVox();
+
         internal float GlobalSpeed
         {
             get => _globalSpeed;
