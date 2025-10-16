@@ -12,18 +12,13 @@ namespace YARG.Core.Audio
     {
         private bool _disposed;
 
-        protected readonly string    _path;
-        public readonly    VoxSample Sample;
+        public readonly  VoxSample Sample;
+        private readonly string    _path;
 
-        protected VoxSampleChannel(VoxSample sample, string path)
+        protected VoxSampleChannel(VoxSample sample)
         {
             Sample = sample;
-            _path = path;
-
-            GlobalAudioHandler.StemSettings[SongStem.VoxSample].OnVolumeChange += SetVolume;
         }
-
-        public string Path => _path;
 
         public void Play()
         {
@@ -72,7 +67,6 @@ namespace YARG.Core.Audio
             {
                 if (!_disposed)
                 {
-                    GlobalAudioHandler.StemSettings[SongStem.VoxSample].OnVolumeChange -= SetVolume;
                     if (disposing)
                     {
                         DisposeManagedResources();

@@ -9,17 +9,10 @@ namespace YARG.Core.Audio
         protected const double PLAYBACK_SUPPRESS_THRESHOLD = 0.05f;
         private bool _disposed;
 
-        protected readonly string _path;
-        protected readonly int _playbackCount;
-
         public readonly SfxSample Sample;
-        protected SampleChannel(SfxSample sample, string path, int playbackCount)
+        protected SampleChannel(SfxSample sample)
         {
             Sample = sample;
-            _path = path;
-            _playbackCount = playbackCount;
-
-            GlobalAudioHandler.StemSettings[SongStem.Sfx].OnVolumeChange += SetVolume;
         }
 
         public void Play(double duration = 0)
@@ -122,7 +115,6 @@ namespace YARG.Core.Audio
             {
                 if (!_disposed)
                 {
-                    GlobalAudioHandler.StemSettings[SongStem.Sfx].OnVolumeChange -= SetVolume;
                     if (disposing)
                     {
                         DisposeManagedResources();

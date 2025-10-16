@@ -2,15 +2,8 @@ using System;
 
 namespace YARG.Core.Audio
 {
-    public interface StemAudioController
-    {
-        void SetWhammyPitch(float percent);
-        float GetWhammyPitch();
-        void SetVolume(double volume);
-        void SetReverb(bool reverb);
-    }
 
-    public abstract class StemChannel : StemAudioController, IDisposable
+    public abstract class StemChannel : IDisposable
     {
         public const double MINIMUM_STEM_VOLUME = 0.15;
 
@@ -25,11 +18,6 @@ namespace YARG.Core.Audio
             _clampVolume = clampVolume;
             _manager = manager;
             Stem = stem;
-
-            var settings = GlobalAudioHandler.StemSettings[Stem];
-            settings.OnVolumeChange += SetVolume;
-            settings.OnReverbChange += SetReverb;
-            settings.OnWhammyPitchChange += SetWhammyPitch;
         }
 
         public void SetWhammyPitch(float percent)
@@ -141,7 +129,6 @@ namespace YARG.Core.Audio
             {
                 if (!_disposed)
                 {
-                    GlobalAudioHandler.StemSettings[Stem].OnVolumeChange -= SetVolume;
                     if (disposing)
                     {
                         DisposeManagedResources();
