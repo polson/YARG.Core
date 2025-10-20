@@ -19,9 +19,9 @@ namespace YARG.Core.Audio
             Stem = stem;
 
             var settings = GlobalAudioHandler.StemSettings[Stem];
-            settings.OnVolumeChange += SetVolume;
-            settings.OnReverbChange += SetReverb;
-            settings.OnWhammyPitchChange += SetWhammyPitch;
+            // settings.OnVolumeChange += SetVolume;
+            // settings.OnReverbChange += SetReverb;
+            // settings.OnWhammyPitchChange += SetWhammyPitch;
         }
 
         public void SetWhammyPitch(float percent)
@@ -81,7 +81,7 @@ namespace YARG.Core.Audio
             }
         }
 
-        private void SetVolume(double volume)
+        public void SetVolume(double volume)
         {
             lock (this)
             {
@@ -96,7 +96,7 @@ namespace YARG.Core.Audio
             }
         }
 
-        private void SetReverb(bool reverb)
+        public void SetReverb(bool reverb)
         {
             lock (this)
             {

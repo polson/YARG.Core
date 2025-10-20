@@ -23,6 +23,19 @@
         VoxSample,
     }
 
+    /// <summary>
+    /// Corresponds to mixer controls
+    /// </summary>
+    public enum MixerGroup
+    {
+        Guitar,
+        Bass,
+        Keys,
+        Drums,
+        Vocals,
+        Song
+    }
+
     public enum SfxSample
     {
         NoteMiss,

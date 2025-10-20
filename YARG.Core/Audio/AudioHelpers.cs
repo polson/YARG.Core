@@ -54,34 +54,34 @@ namespace YARG.Core.Audio
             };
         }
 
-        public static SongStem ToSongStem(this Instrument instrument)
+        public static MixerGroup ToMixerGroup(this Instrument instrument)
         {
             return instrument switch
             {
                 Instrument.FiveFretGuitar or
                 Instrument.SixFretGuitar or
                 Instrument.ProGuitar_17Fret or
-                Instrument.ProGuitar_22Fret => SongStem.Guitar,
+                Instrument.ProGuitar_22Fret => MixerGroup.Guitar,
 
                 Instrument.FiveFretBass or
                 Instrument.SixFretBass or
                 Instrument.ProBass_17Fret or
-                Instrument.ProBass_22Fret => SongStem.Bass,
+                Instrument.ProBass_22Fret => MixerGroup.Bass,
 
-                Instrument.FiveFretRhythm or
-                Instrument.SixFretRhythm or
-                Instrument.FiveFretCoopGuitar or
-                Instrument.SixFretCoopGuitar => SongStem.Rhythm,
+                // Instrument.FiveFretRhythm or
+                // Instrument.SixFretRhythm or
+                // Instrument.FiveFretCoopGuitar or
+                // Instrument.SixFretCoopGuitar => MixerGroup.Bass,
 
                 Instrument.Keys or
-                Instrument.ProKeys => SongStem.Keys,
+                Instrument.ProKeys => MixerGroup.Keys,
 
                 Instrument.ProDrums or
                 Instrument.FourLaneDrums or
-                Instrument.FiveLaneDrums => SongStem.Drums,
+                Instrument.FiveLaneDrums => MixerGroup.Drums,
 
                 Instrument.Vocals or
-                Instrument.Harmony => SongStem.Vocals,
+                Instrument.Harmony => MixerGroup.Vocals,
 
                 _ => throw new Exception("Unreachable.")
             };
