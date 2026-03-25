@@ -7,6 +7,7 @@ namespace YARG.Core.IO
     {
         private const int HEADER_SIZE = 24;
         private const int SET_LENGTH  = 15;
+        private const int FILE_BUFFER_SIZE = 64 * 1024;
 
         private static readonly byte[] FILE_SIGNATURE =
         {
@@ -94,7 +95,7 @@ namespace YARG.Core.IO
         public YARGSongFileStream(string filename, int[] values)
         {
             _values = values;
-            _stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, 1)
+            _stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, FILE_BUFFER_SIZE)
             {
                 Position = HEADER_SIZE
             };
@@ -102,9 +103,29 @@ namespace YARG.Core.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (offset < 0 || count < 0)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            if (buffer == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            if (buffer.Length < offset + count)
+            {
+                throw new ArgumentException();
+            }
+
+            return Read(buffer.AsSpan(offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
             int pos = (int) Position;
-            int read = _stream.Read(buffer, offset, count);
-            var span = new Span<byte>(buffer, offset, read);
+            int read = _stream.Read(buffer);
+            var span = buffer[..read];
 
             unchecked
             {

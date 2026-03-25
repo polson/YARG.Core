@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace YARG.Core.IO
@@ -76,15 +75,20 @@ namespace YARG.Core.IO
                 throw new ArgumentException();
             }
 
-            if (_position == _listing.Length)
+            return Read(buffer.AsSpan(offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            if (_position == _listing.Length || buffer.Length == 0)
             {
                 return 0;
             }
 
             int read = 0;
-            while (read < count && _position < _listing.Length)
+            while (read < buffer.Length && _position < _listing.Length)
             {
-                if (_bufferIndex == -1 ||_bufferPosition == BUFFER_SIZE)
+                if (_bufferIndex == -1 || _bufferPosition == BUFFER_SIZE)
                 {
                     UpdateBuffer();
                 }
@@ -96,17 +100,18 @@ namespace YARG.Core.IO
                     available = (int)remainingInFile;
                 }
 
-                int amount = count - read;
+                int amount = buffer.Length - read;
                 if (amount > available)
                 {
                     amount = available;
                 }
 
-                Unsafe.CopyBlock(ref buffer[offset + read], ref _dataBuffer[_bufferPosition], (uint) amount);
+                _dataBuffer.Span.Slice(_bufferPosition, amount).CopyTo(buffer[read..]);
                 read += amount;
                 _position += amount;
                 _bufferPosition += amount;
             }
+
             return read;
         }
 

@@ -32,6 +32,7 @@ namespace YARG.Core.Song
 
         public override StemMixer? LoadAudio(float speed, double volume, params SongStem[] ignoreStems)
         {
+            var loadStopwatch = System.Diagnostics.Stopwatch.StartNew();
             bool clampStemVolume = _metadata.Source.ToLowerInvariant() == "yarg";
             var mixer = GlobalAudioHandler.CreateMixer(ToString(), speed, volume, clampStemVolume, true);
             if (mixer == null)
@@ -43,6 +44,7 @@ namespace YARG.Core.Song
             var subFiles = GetSubFiles();
             foreach (var stem in IniAudio.SupportedStems)
             {
+                var stemStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var stemEnum = AudioHelpers.SupportedStems[stem];
                 if (ignoreStems.Contains(stemEnum))
                     continue;
@@ -55,6 +57,8 @@ namespace YARG.Core.Song
                         var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 1);
                         if (mixer.AddChannel(stream, stemEnum))
                         {
+                            stemStopwatch.Stop();
+                            YargLogger.LogFormatInfo("[LOADING] Loaded stem {0} in {1}ms", stem, stemStopwatch.ElapsedMilliseconds);
                             // No duplicates
                             break;
                         }
@@ -75,6 +79,8 @@ namespace YARG.Core.Song
             {
                 YargLogger.LogFormatInfo("Loaded {0} stems", mixer.Channels.Count);
             }
+            loadStopwatch.Stop();
+            YargLogger.LogFormatInfo("[LOADING] Total audio loading took {0}ms", loadStopwatch.ElapsedMilliseconds);
             return mixer;
         }
 

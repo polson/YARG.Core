@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using YARG.Core.IO;
 using YARG.Core.Logging;
 using YARG.Core.Parsing;
@@ -13,6 +14,8 @@ namespace YARG.Core.Chart
     /// </summary>
     public partial class SongChart
     {
+        private static readonly ConditionalWeakTable<SongChart, MiloVenue> LoadedMiloVenues = new();
+
         private void PostProcessSections()
         {
             uint lastTick = GetLastTick();
@@ -510,8 +513,7 @@ namespace YARG.Core.Chart
 
         public static void LoadVenueFromMilo(SongChart songChart, SongEntry songEntry)
         {
-            var miloVenue = new MiloVenue(songChart, songEntry);
-            miloVenue.Load();
+            var miloVenue = GetLoadedMiloVenue(songChart, songEntry);
 
             songChart.VenueTrack.Lighting.AddRange(miloVenue.LightingEvents);
             songChart.VenueTrack.Stage.AddRange(miloVenue.StageEvents);
@@ -524,8 +526,7 @@ namespace YARG.Core.Chart
         //  Also, we need to eventually parse lipsync from midi if it's there (rare, but it happens)
         public static void LoadLipsyncFromMilo(SongChart songChart, SongEntry songEntry)
         {
-            var miloLipsync = new MiloVenue(songChart, songEntry);
-            miloLipsync.Load();
+            var miloLipsync = GetLoadedMiloVenue(songChart, songEntry);
 
             songChart.LipsyncEvents.AddRange(miloLipsync.LipsyncEvents);
             
@@ -542,6 +543,19 @@ namespace YARG.Core.Chart
             {
                 songChart.LipsyncEvents.AddRange(LipsyncGenerator.GenerateFromLyrics(songChart.Lyrics));
             }
+        }
+
+        private static MiloVenue GetLoadedMiloVenue(SongChart songChart, SongEntry songEntry)
+        {
+            if (LoadedMiloVenues.TryGetValue(songChart, out var miloVenue))
+            {
+                return miloVenue;
+            }
+
+            miloVenue = new MiloVenue(songChart, songEntry);
+            miloVenue.Load();
+            LoadedMiloVenues.Add(songChart, miloVenue);
+            return miloVenue;
         }
 
         // Add range shift events to the InstrumentDifficulty

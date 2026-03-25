@@ -55,6 +55,8 @@ namespace YARG.Core.IO
     /// </summary>
     public struct SngFile : IDisposable
     {
+        private const int FILE_BUFFER_SIZE = 64 * 1024;
+
         private SngTracker _tracker;
 
         public uint Version { get; private set; }
@@ -100,7 +102,7 @@ namespace YARG.Core.IO
         public static SngFile TryLoadFromFile(string filename, bool loadMetadata)
         {
             using var tracker = new SngTracker();
-            var filestream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, 1);
+            var filestream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, FILE_BUFFER_SIZE);
             if (YARGSongFileStream.TryLoad(filestream, out var yargStream))
             {
                 yargStream.Position = SNGPKG.Length;
@@ -143,7 +145,7 @@ namespace YARG.Core.IO
 
         public static bool ValidateMatch(string filename, uint versionToMatch)
         {
-            using var filestream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, 1);
+            using var filestream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, FILE_BUFFER_SIZE);
             Stream basestream;
             if (YARGSongFileStream.TryLoad(filestream, out var yargStream))
             {

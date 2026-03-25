@@ -29,7 +29,12 @@ namespace YARG.Core.Song
 
         public override StemMixer? LoadAudio(float speed, double volume, params SongStem[] ignoreStems)
         {
+            var sngStopwatch = System.Diagnostics.Stopwatch.StartNew();
             using var sngFile = SngFile.TryLoadFromFile(_location, false);
+            sngStopwatch.Stop();
+            LoadingTrace.LogIfSlow(sngStopwatch.ElapsedMilliseconds,
+                "[LOADING] SngFile.TryLoadFromFile took {0}ms", sngStopwatch.ElapsedMilliseconds);
+
             if (!sngFile.IsLoaded)
             {
                 YargLogger.LogFormatError("Failed to load sng file {0}", _location);
@@ -193,8 +198,17 @@ namespace YARG.Core.Song
 
         private StemMixer? CreateAudioMixer(float speed, double volume, in SngFile sngFile, params SongStem[] ignoreStems)
         {
+            var totalStopwatch = System.Diagnostics.Stopwatch.StartNew();
             bool clampStemVolume = _metadata.Source.ToLowerInvariant() == "yarg";
-            var mixer = GlobalAudioHandler.CreateMixer(ToString(), speed, volume, true, clampStemVolume);
+            string slowStemLoads = string.Empty;
+
+            var mixerStopwatch = System.Diagnostics.Stopwatch.StartNew();
+            // SNG files are pre-authored and should already be normalized
+            var mixer = GlobalAudioHandler.CreateMixer(ToString(), speed, volume, clampStemVolume, normalize: false);
+            mixerStopwatch.Stop();
+            LoadingTrace.LogIfSlow(mixerStopwatch.ElapsedMilliseconds,
+                "[LOADING] CreateMixer took {0}ms", mixerStopwatch.ElapsedMilliseconds);
+
             if (mixer == null)
             {
                 YargLogger.LogError("Failed to create mixer");
@@ -215,11 +229,21 @@ namespace YARG.Core.Song
                     if (sngFile.TryGetListing(file, out var listing))
                     {
                         var stream = sngFile.CreateStream(file, in listing);
+
+                        var addStopwatch = System.Diagnostics.Stopwatch.StartNew();
                         if (mixer.AddChannel(stream, stemEnum))
                         {
+                            addStopwatch.Stop();
+                            if (LoadingTrace.IsSlow(addStopwatch.ElapsedMilliseconds, LoadingTrace.OutlierThresholdMilliseconds))
+                            {
+                                slowStemLoads = string.IsNullOrEmpty(slowStemLoads)
+                                    ? $"{file}={addStopwatch.ElapsedMilliseconds}ms"
+                                    : $"{slowStemLoads}, {file}={addStopwatch.ElapsedMilliseconds}ms";
+                            }
                             // No duplicates
                             break;
                         }
+                        addStopwatch.Stop();
                         stream.Dispose();
                         YargLogger.LogFormatError("Failed to load stem file {0}", file);
                     }
@@ -237,6 +261,13 @@ namespace YARG.Core.Song
             {
                 YargLogger.LogFormatInfo("Loaded {0} stems", mixer.Channels.Count);
             }
+
+            totalStopwatch.Stop();
+            if (!string.IsNullOrEmpty(slowStemLoads))
+            {
+                YargLogger.LogFormatInfo("[LOADING] Slow audio stems: {0}", slowStemLoads);
+            }
+            YargLogger.LogFormatInfo("[LOADING] CreateAudioMixer total took {0}ms", totalStopwatch.ElapsedMilliseconds);
             return mixer;
         }
 
