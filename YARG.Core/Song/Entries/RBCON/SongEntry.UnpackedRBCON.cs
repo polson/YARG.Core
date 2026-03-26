@@ -43,8 +43,7 @@ namespace YARG.Core.Song
             string yarground = Path.Combine(_root.FullName, _subName, YARGROUND_FULLNAME);
             if (File.Exists(yarground))
             {
-                var stream = File.OpenRead(yarground);
-                return new BackgroundResult(BackgroundType.Yarground, stream);
+                return new BackgroundResult(BackgroundType.Yarground, yarground);
             }
 
             foreach (var name in BACKGROUND_FILENAMES)

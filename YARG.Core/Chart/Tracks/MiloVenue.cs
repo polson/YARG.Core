@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using YARG.Core.Chart.Events;
 using YARG.Core.IO;
+using YARG.Core.Logging;
 using YARG.Core.Song;
 using MiloAnimationEvent = YARG.Core.IO.MiloAnimation.MiloAnimationEvent;
 using MiloAnimationType = YARG.Core.IO.MiloAnimation.MiloAnimationType;
@@ -40,9 +42,15 @@ namespace YARG.Core.Chart
 
         public void Load()
         {
+            var totalStopwatch = Stopwatch.StartNew();
+
+            var miloLoadStopwatch = Stopwatch.StartNew();
             var miloData = _song.LoadMiloData();
+            miloLoadStopwatch.Stop();
+
             if (miloData is { Length: > 0 })
             {
+                var miloReadStopwatch = Stopwatch.StartNew();
                 var miloReader = new MiloAnimation(miloData);
                 _rawEvents = miloReader.GetMiloAnimation();
 
@@ -53,6 +61,11 @@ namespace YARG.Core.Chart
                 miloData.Dispose();
                 miloReader.Dispose();
                 lipsyncReader.Dispose();
+                miloReadStopwatch.Stop();
+
+                YargLogger.LogFormatInfo("[VENUE] Milo data loaded in {0}ms, parsed in {1}ms ({2} events, {3} lipsync)",
+                    miloLoadStopwatch.ElapsedMilliseconds, miloReadStopwatch.ElapsedMilliseconds,
+                    _rawEvents.Count, _lipsyncData.Count);
             }
             else
             {
@@ -60,6 +73,7 @@ namespace YARG.Core.Chart
                 return;
             }
 
+            var processStopwatch = Stopwatch.StartNew();
             for (; _rawEventIndex < _rawEvents.Count; _rawEventIndex++)
             {
                 // Dispatch to processing function based on type, we will regain control when all of that type are done
@@ -99,16 +113,27 @@ namespace YARG.Core.Chart
             }
 
             // Sort all the lists
+            var sortStopwatch = Stopwatch.StartNew();
             CameraCuts.Sort((a, b) => a.Time.CompareTo(b.Time));
             CrowdEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
             PostProcessingEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
             LightingEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
             StageEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
             PerformerEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
+            sortStopwatch.Stop();
+            YargLogger.LogFormatInfo("[VENUE] Sorted venue events in {0}ms", sortStopwatch.ElapsedMilliseconds);
 
             // Deal with lipsync now
             HandleLipsync();
             LipsyncEvents.Sort((a, b) => a.Time.CompareTo(b.Time));
+
+            processStopwatch.Stop();
+            YargLogger.LogFormatInfo("[VENUE] Milo event processing took {0}ms (Lighting: {1}, Camera: {2}, PostProcess: {3}, Stage: {4}, Performer: {5}, Lipsync: {6})",
+                processStopwatch.ElapsedMilliseconds,
+                LightingEvents.Count, CameraCuts.Count, PostProcessingEvents.Count, StageEvents.Count, PerformerEvents.Count, LipsyncEvents.Count);
+
+            totalStopwatch.Stop();
+            YargLogger.LogFormatInfo("[VENUE] MiloVenue.Load() total took {0}ms", totalStopwatch.ElapsedMilliseconds);
         }
 
         private void HandleStage()

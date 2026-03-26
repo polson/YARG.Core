@@ -130,8 +130,7 @@ namespace YARG.Core.Song
             var subFiles = GetSubFiles();
             if (subFiles.TryGetValue("bg.yarground", out var file))
             {
-                var stream = File.OpenRead(file);
-                return new BackgroundResult(BackgroundType.Yarground, stream);
+                return new BackgroundResult(BackgroundType.Yarground, file);
             }
 
             if (subFiles.TryGetValue(_video, out var video))

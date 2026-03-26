@@ -51,22 +51,20 @@ namespace YARG.Core.Song
             string specifcVenue = Path.Combine(actualDirectory, _subName + YARGROUND_EXTENSION);
             if (File.Exists(specifcVenue))
             {
-                var stream = File.OpenRead(specifcVenue);
-                return new BackgroundResult(BackgroundType.Yarground, stream);
+                return new BackgroundResult(BackgroundType.Yarground, specifcVenue);
             }
 
             specifcVenue = Path.Combine(actualDirectory, conName + YARGROUND_EXTENSION);
             if (File.Exists(specifcVenue))
             {
-                var stream = File.OpenRead(specifcVenue);
-                return new BackgroundResult(BackgroundType.Yarground, stream);
+                return new BackgroundResult(BackgroundType.Yarground, specifcVenue);
             }
 
             var venues = Directory.GetFiles(actualDirectory, YARGROUND_EXTENSION);
             if (venues.Length > 0)
             {
-                var stream = File.OpenRead(venues[BACKROUND_RNG.Next(venues.Length)]);
-                return new BackgroundResult(BackgroundType.Yarground, stream);
+                var selectedVenue = venues[BACKROUND_RNG.Next(venues.Length)];
+                return new BackgroundResult(BackgroundType.Yarground, selectedVenue);
             }
 
             foreach (var name in new[]{ _subName, conName, "bg", "background", "video" })

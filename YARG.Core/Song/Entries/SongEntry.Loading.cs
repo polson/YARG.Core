@@ -10,8 +10,9 @@ namespace YARG.Core.Song
     public class BackgroundResult : IDisposable
     {
         private YARGImage?     _image;
-        public  BackgroundType Type   { get; }
-        public  Stream?        Stream { get; }
+        public  BackgroundType Type     { get; }
+        public  Stream?        Stream   { get; }
+        public  string?        FilePath { get; }
 
         public YARGImage Image => _image;
 
@@ -20,6 +21,15 @@ namespace YARG.Core.Song
             _image = null;
             Type = type;
             Stream = stream;
+            FilePath = null;
+        }
+
+        public BackgroundResult(BackgroundType type, string filePath)
+        {
+            _image = null;
+            Type = type;
+            Stream = null;
+            FilePath = filePath;
         }
 
         public BackgroundResult(YARGImage image)
@@ -27,6 +37,7 @@ namespace YARG.Core.Song
             _image = image;
             Type = BackgroundType.Image;
             Stream = null;
+            FilePath = null;
         }
 
         public void Dispose()
