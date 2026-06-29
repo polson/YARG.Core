@@ -127,6 +127,18 @@ namespace YARG.Core.Audio
             }
         }
 
+        public double GetEstimatedOutputLatency()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return 0;
+                }
+                return GetEstimatedOutputLatency_Internal();
+            }
+        }
+
         public double GetDecodingPosition()
         {
             lock (this)
@@ -304,6 +316,10 @@ namespace YARG.Core.Audio
         protected abstract void FadeOut_Internal(double duration);
         protected abstract int Pause_Internal();
         protected abstract double GetPosition_Internal();
+        protected virtual double GetEstimatedOutputLatency_Internal()
+        {
+            return 0;
+        }
         protected virtual double GetDecodingPosition_Internal()
         {
             return GetPosition_Internal();
