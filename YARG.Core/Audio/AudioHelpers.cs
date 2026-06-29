@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace YARG.Core.Audio
@@ -227,7 +227,6 @@ namespace YARG.Core.Audio
             public string        AlternateFile;
             public float         Volume;
             public bool          CanLoop;
-            public bool          IsPlaying;
 
             public Sample(T kind, string file, float volume = 1.0f, bool canLoop = false, string alternateFile = "")
             {
@@ -236,7 +235,6 @@ namespace YARG.Core.Audio
                 AlternateFile = alternateFile;
                 Volume = volume;
                 CanLoop = canLoop;
-                IsPlaying = false;
             }
 
             public Sample(T kind, string file, bool canLoop) : this(kind, file, 1.0f, canLoop)

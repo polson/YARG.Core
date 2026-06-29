@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -116,6 +116,17 @@ namespace YARG.Core.Audio
             }
         }
 
+        public bool IsPlaying
+        {
+            get
+            {
+                lock (this)
+                {
+                    return !_disposed && IsPlaying_Internal;
+                }
+            }
+        }
+
         protected abstract void Play_Internal(double duration);
         protected abstract void Stop_Internal(double duration);
         protected abstract void Pause_Internal();
@@ -124,6 +135,7 @@ namespace YARG.Core.Audio
         protected abstract void SetEndCallback_Internal();
         protected abstract void SetOutputChannel_Internal(OutputChannel? channel);
         protected abstract void EndCallback_Internal(int _, int __, int ___, IntPtr ____);
+        protected abstract bool IsPlaying_Internal { get; }
 
         protected virtual void DisposeManagedResources() { }
         protected virtual void DisposeUnmanagedResources() { }
@@ -134,9 +146,9 @@ namespace YARG.Core.Audio
             {
                 if (!_disposed)
                 {
-                    GlobalAudioHandler.StemSettings[SongStem.Sfx].OnVolumeChange -= SetVolume;
                     if (disposing)
                     {
+                        GlobalAudioHandler.StemSettings[SongStem.Sfx].OnVolumeChange -= SetVolume;
                         DisposeManagedResources();
                     }
                     DisposeUnmanagedResources();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace YARG.Core.Audio
 {
@@ -58,7 +58,7 @@ namespace YARG.Core.Audio
             }
         }
 
-        public bool IsPlaying()
+        protected bool IsPlaying()
         {
             lock (this)
             {
@@ -84,9 +84,9 @@ namespace YARG.Core.Audio
             {
                 if (!_disposed)
                 {
-                    GlobalAudioHandler.StemSettings[SongStem.VoxSample].OnVolumeChange -= SetVolume;
                     if (disposing)
                     {
+                        GlobalAudioHandler.StemSettings[SongStem.VoxSample].OnVolumeChange -= SetVolume;
                         DisposeManagedResources();
                     }
                     DisposeUnmanagedResources();

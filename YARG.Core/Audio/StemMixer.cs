@@ -127,6 +127,19 @@ namespace YARG.Core.Audio
             }
         }
 
+        public double GetDecodingPosition()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return 0;
+                }
+                return GetDecodingPosition_Internal();
+            }
+        }
+
+
         public double GetVolume()
         {
             lock (this)
@@ -291,6 +304,10 @@ namespace YARG.Core.Audio
         protected abstract void FadeOut_Internal(double duration);
         protected abstract int Pause_Internal();
         protected abstract double GetPosition_Internal();
+        protected virtual double GetDecodingPosition_Internal()
+        {
+            return GetPosition_Internal();
+        }
         protected abstract double GetVolume_Internal();
         protected abstract void SetPosition_Internal(double position);
         protected abstract void SetVolume_Internal(double volume);

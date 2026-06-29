@@ -291,22 +291,38 @@ namespace YARG.Core.Audio
 
         public static void PauseAllSfx()
         {
-            foreach (var sample in AudioHelpers.SfxSamples)
+            lock (_instanceLock)
             {
-                if (sample.IsPlaying)
+                if (_instance == null)
                 {
-                    PauseSoundEffect(sample.Kind);
+                    return;
+                }
+
+                foreach (var channel in _instance.SfxSamples)
+                {
+                    if (channel != null && channel.IsPlaying)
+                    {
+                        channel.Pause();
+                    }
                 }
             }
         }
 
         public static void ResumeAllSfx()
         {
-            foreach (var sample in AudioHelpers.SfxSamples)
+            lock (_instanceLock)
             {
-                if (sample.IsPlaying)
+                if (_instance == null)
                 {
-                    ResumeSoundEffect(sample.Kind);
+                    return;
+                }
+
+                foreach (var channel in _instance.SfxSamples)
+                {
+                    if (channel != null && channel.IsPlaying)
+                    {
+                        channel.Resume();
+                    }
                 }
             }
         }
