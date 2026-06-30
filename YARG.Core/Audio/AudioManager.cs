@@ -86,14 +86,24 @@ namespace YARG.Core.Audio
 
         protected internal virtual bool SetOutputDevice(string name)
         {
+            OutputDevice? device = GetOutputDevice(name);
+            if (device == null)
+            {
+                return false;
+            }
+
+            return SetOutputDevice(device);
+        }
+
+        protected internal virtual bool ReinitializeOutputDevice(string name)
+        {
+            return SetOutputDevice(name);
+        }
+
+        protected bool SetOutputDevice(OutputDevice device)
+        {
             lock (_activeMixers)
             {
-                OutputDevice? device = GetOutputDevice(name);
-                if (device == null)
-                {
-                    return false;
-                }
-
                 foreach (var mixer in _activeMixers)
                 {
                     mixer.SetOutputDevice(device);
