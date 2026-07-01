@@ -140,6 +140,54 @@ namespace YARG.Core.Audio
             }
         }
 
+        public double GetAudibleSyncLatency()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return 0;
+                }
+                return GetAudibleSyncLatency_Internal();
+            }
+        }
+
+        public double GetCommandLatency()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return 0;
+                }
+                return GetCommandLatency_Internal();
+            }
+        }
+
+        public double GetStartLatency()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return 0;
+                }
+                return GetStartLatency_Internal();
+            }
+        }
+
+        public double GetSyncPosition()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return 0;
+                }
+                return GetSyncPosition_Internal();
+            }
+        }
+
         public double GetDecodingPosition()
         {
             lock (this)
@@ -319,7 +367,23 @@ namespace YARG.Core.Audio
         protected abstract double GetPosition_Internal();
         protected virtual double GetEstimatedOutputLatency_Internal()
         {
+            return GetAudibleSyncLatency_Internal();
+        }
+        protected virtual double GetAudibleSyncLatency_Internal()
+        {
             return 0;
+        }
+        protected virtual double GetCommandLatency_Internal()
+        {
+            return GetEstimatedOutputLatency_Internal();
+        }
+        protected virtual double GetStartLatency_Internal()
+        {
+            return GetAudibleSyncLatency_Internal();
+        }
+        protected virtual double GetSyncPosition_Internal()
+        {
+            return GetPosition_Internal();
         }
         protected virtual double GetDecodingPosition_Internal()
         {
