@@ -175,6 +175,18 @@ namespace YARG.Core.Audio
             }
         }
 
+        public double GetPausedResumeLatency()
+        {
+            lock (this)
+            {
+                if (_disposed)
+                {
+                    return 0;
+                }
+                return GetPausedResumeLatency_Internal();
+            }
+        }
+
         public double GetSyncPosition()
         {
             lock (this)
@@ -379,6 +391,10 @@ namespace YARG.Core.Audio
         protected virtual double GetStartLatency_Internal()
         {
             return GetAudibleSyncLatency_Internal();
+        }
+        protected virtual double GetPausedResumeLatency_Internal()
+        {
+            return GetStartLatency_Internal();
         }
         protected virtual double GetSyncPosition_Internal()
         {
