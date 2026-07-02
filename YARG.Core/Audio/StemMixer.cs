@@ -42,7 +42,6 @@ namespace YARG.Core.Audio
         public double Length => _length;
         public IReadOnlyList<StemChannel> Channels => _channels;
         public bool IsPaused => _isPaused;
-        public double UnpauseDelay { get; set; }
 
         public abstract event Action SongEnd;
 

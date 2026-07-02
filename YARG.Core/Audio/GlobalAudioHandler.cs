@@ -572,7 +572,7 @@ namespace YARG.Core.Audio
             }
         }
 
-        public static void SetOutputDevice(string name)
+        public static void SetOutputDevice(string name, bool forceReinitialize = false)
         {
             lock (_instanceLock)
             {
@@ -580,19 +580,7 @@ namespace YARG.Core.Audio
                 {
                     throw new NotInitializedException();
                 }
-                _instance.SetOutputDevice(name);
-            }
-        }
-
-        public static void ReinitializeOutputDevice(string name)
-        {
-            lock (_instanceLock)
-            {
-                if (_instance == null)
-                {
-                    throw new NotInitializedException();
-                }
-                _instance.ReinitializeOutputDevice(name);
+                _instance.SetOutputDevice(name, forceReinitialize);
             }
         }
     }

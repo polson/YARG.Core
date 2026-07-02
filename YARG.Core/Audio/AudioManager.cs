@@ -84,7 +84,7 @@ namespace YARG.Core.Audio
             }
         }
 
-        protected internal virtual bool SetOutputDevice(string name)
+        protected internal virtual bool SetOutputDevice(string name, bool forceReinitialize = false)
         {
             OutputDevice? device = GetOutputDevice(name);
             if (device == null)
@@ -93,11 +93,6 @@ namespace YARG.Core.Audio
             }
 
             return SetOutputDevice(device);
-        }
-
-        protected internal virtual bool ReinitializeOutputDevice(string name)
-        {
-            return SetOutputDevice(name);
         }
 
         protected bool SetOutputDevice(OutputDevice device)
