@@ -10,6 +10,7 @@ namespace YARG.Core.Audio
         private static float _globalSpeed = 1f;
 
         private bool _disposed;
+        private bool _disposing;
         private List<StemMixer> _activeMixers = new();
 
         protected internal SampleChannel[]          SfxSamples       = new SampleChannel[AudioHelpers.SfxSamples.Count];
@@ -108,6 +109,19 @@ namespace YARG.Core.Audio
             return true;
         }
 
+        protected internal virtual void SetSingleMixer(bool enabled) { }
+
+        protected bool HasActiveMixers
+        {
+            get
+            {
+                lock (_activeMixers)
+                {
+                    return _activeMixers.Count != 0;
+                }
+            }
+        }
+
 
         internal void SetBufferLength(int length)
         {
@@ -174,13 +188,22 @@ namespace YARG.Core.Audio
         /// <remarks>Should stay limited to the Audio namespace</remarks>
         internal void RemoveMixer(StemMixer mixer)
         {
+            bool becameIdle;
             lock (_activeMixers)
             {
                 var level = GlobalAudioHandler.LogMixerStatus ? LogLevel.Debug : LogLevel.Trace;
                 YargLogger.LogFormat(level, "Mixer \"{0}\" disposed", mixer.Name);
-                _activeMixers.Remove(mixer);
+                bool removed = _activeMixers.Remove(mixer);
+                becameIdle = removed && _activeMixers.Count == 0;
+            }
+
+            if (becameIdle && !_disposing)
+            {
+                OnMixersIdle();
             }
         }
+
+        protected virtual void OnMixersIdle() { }
 
         protected virtual void DisposeManagedResources() { }
         protected virtual void DisposeUnmanagedResources() { }
@@ -191,6 +214,7 @@ namespace YARG.Core.Audio
             {
                 if (!_disposed)
                 {
+                    _disposing = true;
                     StemMixer[] mixers;
                     lock (_activeMixers)
                     {
