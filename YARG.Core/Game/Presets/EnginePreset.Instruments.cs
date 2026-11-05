@@ -142,7 +142,7 @@ namespace YARG.Core.Game
                 };
             }
 
-            public GuitarEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass)
+            public GuitarEngineParameters Create(float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, bool isBass, bool freestyleSolos = false)
             {
                 var hitWindow = HitWindow.Create();
                 return new GuitarEngineParameters(
@@ -159,7 +159,8 @@ namespace YARG.Core.Game
                     AntiGhosting,
                     SoloTaps,
                     NoStarPowerOverlap,
-                    EnableLanes);
+                    EnableLanes,
+                    freestyleSolos);
             }
         }
 

@@ -33,16 +33,24 @@ namespace YARG.Core.Engine.Guitar.Engines
             _botBaseMask = EffectiveButtonMask;
         }
 
+        protected override void OnFreestyleStarted()
+        {
+            _botBaseMask = EffectiveButtonMask;
+        }
+
         protected override void UpdateBot(double time)
         {
-            if (!IsBot)
+            if (!IsBot && !IsFreestyleActive)
             {
                 return;
             }
 
             if (NoteIndex < Notes.Count)
             {
-                IsStarPowerInputActive = CanStarPowerActivate && !IsStarPowerInputActive;
+                if (IsBot)
+                {
+                    IsStarPowerInputActive = CanStarPowerActivate && !IsStarPowerInputActive;
+                }
 
                 var note = Notes[NoteIndex];
 
@@ -99,6 +107,20 @@ namespace YARG.Core.Engine.Guitar.Engines
         protected override void MutateStateWithInput(GameInput gameInput)
         {
             var action = gameInput.GetAction<GuitarAction>();
+
+            if (UpdateFreestyleState())
+            {
+                if (IsFretInput(gameInput))
+                {
+                    SetInputFret(gameInput.Action, gameInput.Button);
+                    return;
+                }
+
+                if (action is GuitarAction.StrumDown or GuitarAction.StrumUp)
+                {
+                    return;
+                }
+            }
 
             bool newNoteInput = false;
 
@@ -160,6 +182,7 @@ namespace YARG.Core.Engine.Guitar.Engines
 
         protected override void UpdateHitLogic(double time)
         {
+            UpdateFreestyleState();
             UpdateTimers();
 
             bool strumEatenByHopo = false;

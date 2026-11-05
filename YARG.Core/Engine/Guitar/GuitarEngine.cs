@@ -47,6 +47,38 @@ namespace YARG.Core.Engine.Guitar
 
         protected double FrontEndExpireTime;
 
+        private bool _wasFreestyleActive;
+
+        /// <summary>
+        /// Whether the engine is playing the current notes on the player's behalf because they are
+        /// part of a freestyle solo. Player frets are still tracked, but they don't affect hit logic.
+        /// </summary>
+        public bool IsFreestyleActive
+        {
+            get
+            {
+                if (!EngineParameters.FreestyleSolos)
+                {
+                    return false;
+                }
+
+                if (NoteIndex < Notes.Count && Notes[NoteIndex].IsSolo)
+                {
+                    return true;
+                }
+
+                foreach (var sustain in ActiveSustains)
+                {
+                    if (sustain.Note.IsSolo)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         protected GuitarEngine(InstrumentDifficulty<GuitarNote> chart, SyncTrack syncTrack,
             GuitarEngineParameters engineParameters, bool isBot)
             : base(chart, syncTrack, engineParameters, false, isBot)
@@ -103,6 +135,8 @@ namespace YARG.Core.Engine.Guitar
             HopoLeniencyTimer.Reset();
 
             FrontEndExpireTime = 0;
+
+            _wasFreestyleActive = false;
 
             ActiveSustains.Clear();
 
@@ -200,6 +234,36 @@ namespace YARG.Core.Engine.Guitar
             UpdateMultiplier();
 
             OnOverstrum?.Invoke();
+        }
+
+        protected override bool IsBotNote(GuitarNote note)
+        {
+            return IsBot || (EngineParameters.FreestyleSolos && note.IsSolo);
+        }
+
+        /// <summary>
+        /// Tracks entering and leaving a freestyle solo. On leaving, the player's held frets
+        /// take over from the frets the engine was holding.
+        /// </summary>
+        protected bool UpdateFreestyleState()
+        {
+            bool active = IsFreestyleActive;
+            if (!_wasFreestyleActive && active)
+            {
+                OnFreestyleStarted();
+            }
+            else if (_wasFreestyleActive && !active)
+            {
+                LastButtonMask = EffectiveButtonMask;
+                ApplyInputButtonMask();
+            }
+
+            _wasFreestyleActive = active;
+            return active;
+        }
+
+        protected virtual void OnFreestyleStarted()
+        {
         }
 
         protected override bool CanSustainHold(GuitarNote note)
@@ -445,6 +509,18 @@ namespace YARG.Core.Engine.Guitar
 
         protected void ToggleFret(int fret, bool active)
         {
+            SetInputFret(fret, active);
+
+            // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
+            // used elsewhere so that solo buttons are treated as if they were regular buttons
+            byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
+
+            // EffectiveButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
+            EffectiveButtonMask = (byte) (InputButtonMask | soloButtonMask);
+        }
+
+        protected void SetInputFret(int fret, bool active)
+        {
             if (active)
             {
                 InputButtonMask |= (ushort) (1 << fret);
@@ -454,13 +530,22 @@ namespace YARG.Core.Engine.Guitar
                 InputButtonMask &= (ushort) ~(1 << fret);
             }
 
-            // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
-            // used elsewhere so that solo buttons are treated as if they were regular buttons
-            byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
-
-            // EffectiveButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
-            EffectiveButtonMask = (byte) (InputButtonMask | soloButtonMask);
             StandardButtonHeld = (InputButtonMask & ~OPEN_MASK & ~SOLO_MASK) > 0;
+        }
+
+        private void ApplyInputButtonMask()
+        {
+            byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
+            EffectiveButtonMask = (byte) (InputButtonMask | soloButtonMask);
+
+            if ((EffectiveButtonMask & ~OPEN_MASK) == 0)
+            {
+                EffectiveButtonMask |= OPEN_MASK;
+            }
+            else
+            {
+                EffectiveButtonMask &= unchecked((byte) ~OPEN_MASK);
+            }
         }
 
         public bool IsFretHeld(GuitarAction fret)
