@@ -255,7 +255,7 @@ namespace YARG.Core.Engine.Guitar
             else if (_wasFreestyleActive && !active)
             {
                 LastButtonMask = EffectiveButtonMask;
-                ApplyInputButtonMask();
+                ApplyInputMask();
             }
 
             _wasFreestyleActive = active;
@@ -510,13 +510,7 @@ namespace YARG.Core.Engine.Guitar
         protected void ToggleFret(int fret, bool active)
         {
             SetInputFret(fret, active);
-
-            // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
-            // used elsewhere so that solo buttons are treated as if they were regular buttons
-            byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
-
-            // EffectiveButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
-            EffectiveButtonMask = (byte) (InputButtonMask | soloButtonMask);
+            ApplyInputMask();
         }
 
         protected void SetInputFret(int fret, bool active)
@@ -533,17 +527,23 @@ namespace YARG.Core.Engine.Guitar
             StandardButtonHeld = (InputButtonMask & ~OPEN_MASK & ~SOLO_MASK) > 0;
         }
 
-        private void ApplyInputButtonMask()
+        private void ApplyInputMask()
         {
+            // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
+            // used elsewhere so that solo buttons are treated as if they were regular buttons
             byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
+
+            // EffectiveButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
             EffectiveButtonMask = (byte) (InputButtonMask | soloButtonMask);
 
+            // No other frets are held, enable the "open fret"
             if ((EffectiveButtonMask & ~OPEN_MASK) == 0)
             {
                 EffectiveButtonMask |= OPEN_MASK;
             }
             else
             {
+                // Some frets are held, disable the "open fret"
                 EffectiveButtonMask &= unchecked((byte) ~OPEN_MASK);
             }
         }

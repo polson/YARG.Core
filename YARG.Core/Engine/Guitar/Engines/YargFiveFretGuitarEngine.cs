@@ -116,7 +116,7 @@ namespace YARG.Core.Engine.Guitar.Engines
                     return;
                 }
 
-                if (action is GuitarAction.StrumDown or GuitarAction.StrumUp)
+                if (IsStrumInput(gameInput))
                 {
                     return;
                 }
@@ -145,17 +145,6 @@ namespace YARG.Core.Engine.Guitar.Engines
                 IsFretPress = gameInput.Button;
 
                 ToggleFret(gameInput.Action, gameInput.Button);
-
-                // No other frets are held, enable the "open fret"
-                if ((EffectiveButtonMask & ~OPEN_MASK) == 0)
-                {
-                    EffectiveButtonMask |= OPEN_MASK;
-                }
-                else
-                {
-                    // Some frets are held, disable the "open fret"
-                    EffectiveButtonMask &= unchecked((byte) ~OPEN_MASK);
-                }
 
                 newNoteInput = true;
             }
