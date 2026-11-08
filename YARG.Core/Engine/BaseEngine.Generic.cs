@@ -246,7 +246,7 @@ namespace YARG.Core.Engine
                     break;
                 }
 
-                if (!IsBotNote(note))
+                if (!IsAutoPlayed(note))
                 {
                     // Earliest the note can be hit
                     if (IsTimeBetween(noteFrontEnd, previousTime, nextTime))
@@ -556,7 +556,7 @@ namespace YARG.Core.Engine
 
         protected abstract bool CanSustainHold(TNoteType note);
 
-        protected virtual bool IsBotNote(TNoteType note) => IsBot;
+        public virtual bool IsAutoPlayed(TNoteType note) => IsBot;
 
         protected virtual bool CanSustainHold(in ActiveSustain<TNoteType> sustain)
         {

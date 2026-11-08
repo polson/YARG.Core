@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using YARG.Core.Chart;
 using YARG.Core.Engine;
@@ -53,8 +54,10 @@ public class FreestyleSoloTests
         return engine;
     }
 
-    private static void Play(YargFiveFretGuitarEngine engine)
+    private static List<(double Time, double? SoloTime)> Play(YargFiveFretGuitarEngine engine)
     {
+        var samples = new List<(double Time, double? SoloTime)>();
+
         var inputs = new List<GameInput>
         {
             GameInput.Create(0.0, GuitarAction.GreenFret, true),
@@ -80,7 +83,10 @@ public class FreestyleSoloTests
             }
 
             engine.Update(time);
+            samples.Add((time, engine.FreestyleSoloTime));
         }
+
+        return samples;
     }
 
     [Test]
@@ -99,6 +105,36 @@ public class FreestyleSoloTests
             Assert.That(engine.EngineStats.MaxCombo, Is.EqualTo(5));
             Assert.That(engine.EngineStats.SoloBonuses, Is.GreaterThan(0));
             Assert.That(engine.IsFreestyleActive, Is.False);
+        }
+    }
+
+    [Test]
+    public void SoloPhrases_AreAvailableWhenThePlayerBuildsItsSeedSets()
+    {
+        var engine = CreateEngine(true, new List<int>());
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(engine.SoloPhrases, Has.Count.EqualTo(1));
+            Assert.That(engine.SoloPhrases[0].StartTick, Is.EqualTo(480));
+            Assert.That(engine.SoloPhrases[0].EndTick, Is.EqualTo(960));
+        }
+    }
+
+    [Test]
+    public void FreestyleSoloTime_IsThePhraseStart_AndOutlivesTheLastSustainAttack()
+    {
+        var engine = CreateEngine(true, new List<int>());
+
+        var active = Play(engine).Where(sample => sample.SoloTime != null).ToList();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(active, Is.Not.Empty);
+            Assert.That(active.All(sample => sample.SoloTime!.Value == 0.5), Is.True);
+            Assert.That(active.Max(sample => sample.Time), Is.GreaterThan(1.0));
+            Assert.That(active.Max(sample => sample.Time), Is.LessThan(1.3));
+            Assert.That(engine.FreestyleSoloTime, Is.Null);
         }
     }
 

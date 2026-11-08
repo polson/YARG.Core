@@ -47,36 +47,42 @@ namespace YARG.Core.Engine.Guitar
 
         protected double FrontEndExpireTime;
 
-        private bool _wasFreestyleActive;
+        private double? _freestyleSoloTime;
 
         /// <summary>
         /// Whether the engine is playing the current notes on the player's behalf because they are
         /// part of a freestyle solo. Player frets are still tracked, but they don't affect hit logic.
         /// </summary>
-        public bool IsFreestyleActive
+        public bool IsFreestyleActive => FreestyleNote() != null;
+
+        /// <summary>
+        /// The chart time at which the freestyle solo phrase being played started, or null when the
+        /// engine is not playing one. This is the phrase's start rather than the played note's time,
+        /// so it stays valid for as long as the phrase's last note sustains.
+        /// </summary>
+        public double? FreestyleSoloTime => _freestyleSoloTime;
+
+        private GuitarNote? FreestyleNote()
         {
-            get
+            if (!EngineParameters.FreestyleSolos)
             {
-                if (!EngineParameters.FreestyleSolos)
-                {
-                    return false;
-                }
-
-                if (NoteIndex < Notes.Count && Notes[NoteIndex].IsSolo)
-                {
-                    return true;
-                }
-
-                foreach (var sustain in ActiveSustains)
-                {
-                    if (sustain.Note.IsSolo)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
+                return null;
             }
+
+            if (NoteIndex < Notes.Count && Notes[NoteIndex].IsSolo)
+            {
+                return Notes[NoteIndex];
+            }
+
+            foreach (var sustain in ActiveSustains)
+            {
+                if (sustain.Note.IsSolo)
+                {
+                    return sustain.Note;
+                }
+            }
+
+            return null;
         }
 
         protected GuitarEngine(InstrumentDifficulty<GuitarNote> chart, SyncTrack syncTrack,
@@ -136,7 +142,7 @@ namespace YARG.Core.Engine.Guitar
 
             FrontEndExpireTime = 0;
 
-            _wasFreestyleActive = false;
+            _freestyleSoloTime = null;
 
             ActiveSustains.Clear();
 
@@ -236,12 +242,15 @@ namespace YARG.Core.Engine.Guitar
             OnOverstrum?.Invoke();
         }
 
-        public bool IsAutoPlayed(GuitarNote note)
+        private bool IsFreestyleAutoPlayed(GuitarNote note)
         {
-            return IsBot || (EngineParameters.FreestyleSolos && note.IsSolo);
+            return EngineParameters.FreestyleSolos && note.ParentOrSelf.IsSolo;
         }
 
-        protected override bool IsBotNote(GuitarNote note) => IsAutoPlayed(note);
+        public override bool IsAutoPlayed(GuitarNote note)
+        {
+            return IsBot || IsFreestyleAutoPlayed(note);
+        }
 
         /// <summary>
         /// Tracks entering and leaving a freestyle solo. On leaving, the player's held frets
@@ -249,22 +258,34 @@ namespace YARG.Core.Engine.Guitar
         /// </summary>
         protected void UpdateFreestyleState()
         {
-            bool active = IsFreestyleActive;
-            if (!_wasFreestyleActive && active)
+            var note = FreestyleNote();
+            bool wasActive = _freestyleSoloTime.HasValue;
+
+            if (!wasActive && note != null)
             {
+                _freestyleSoloTime = SoloPhraseStart(note).Time;
                 OnFreestyleStarted();
             }
-            else if (_wasFreestyleActive && !active)
+            else if (wasActive && note == null)
             {
+                _freestyleSoloTime = null;
                 LastButtonMask = EffectiveButtonMask;
                 ApplyInputMask();
             }
-
-            _wasFreestyleActive = active;
         }
 
         protected virtual void OnFreestyleStarted()
         {
+        }
+
+        private static GuitarNote SoloPhraseStart(GuitarNote note)
+        {
+            while (note.PreviousNote != null && note.PreviousNote.IsSolo)
+            {
+                note = note.PreviousNote;
+            }
+
+            return note;
         }
 
         protected override bool CanSustainHold(GuitarNote note)
@@ -564,6 +585,21 @@ namespace YARG.Core.Engine.Guitar
         public bool IsFretHeld(GuitarAction fret)
         {
             return (EffectiveButtonMask & (1 << (int) fret)) != 0;
+        }
+
+        public static int FretRowMask(GuitarAction action)
+        {
+            if (action >= GuitarAction.SoloGreenFret && action <= GuitarAction.SoloOrangeFret)
+            {
+                return 1 << (action - GuitarAction.SoloGreenFret);
+            }
+
+            if (action >= GuitarAction.Fret1 && action <= GuitarAction.Fret6)
+            {
+                return 1 << (int) action;
+            }
+
+            return 0;
         }
 
         protected int GetLaneMask()
