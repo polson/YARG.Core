@@ -108,7 +108,7 @@ namespace YARG.Core.Engine.Guitar.Engines
         {
             var action = gameInput.GetAction<GuitarAction>();
 
-            if (UpdateFreestyleState())
+            if (IsFreestyleActive)
             {
                 if (IsFretInput(gameInput))
                 {

@@ -236,16 +236,18 @@ namespace YARG.Core.Engine.Guitar
             OnOverstrum?.Invoke();
         }
 
-        protected override bool IsBotNote(GuitarNote note)
+        public bool IsAutoPlayed(GuitarNote note)
         {
             return IsBot || (EngineParameters.FreestyleSolos && note.IsSolo);
         }
+
+        protected override bool IsBotNote(GuitarNote note) => IsAutoPlayed(note);
 
         /// <summary>
         /// Tracks entering and leaving a freestyle solo. On leaving, the player's held frets
         /// take over from the frets the engine was holding.
         /// </summary>
-        protected bool UpdateFreestyleState()
+        protected void UpdateFreestyleState()
         {
             bool active = IsFreestyleActive;
             if (!_wasFreestyleActive && active)
@@ -259,7 +261,6 @@ namespace YARG.Core.Engine.Guitar
             }
 
             _wasFreestyleActive = active;
-            return active;
         }
 
         protected virtual void OnFreestyleStarted()
@@ -527,14 +528,26 @@ namespace YARG.Core.Engine.Guitar
             StandardButtonHeld = (InputButtonMask & ~OPEN_MASK & ~SOLO_MASK) > 0;
         }
 
+        /// <summary>
+        /// The frets the player is physically holding, with solo buttons folded onto their regular
+        /// rows, before the open fret adjustment.
+        /// </summary>
+        public byte PlayerButtonMask
+        {
+            get
+            {
+                // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
+                // used elsewhere so that solo buttons are treated as if they were regular buttons
+                byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
+
+                // PlayerButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
+                return (byte) (InputButtonMask | soloButtonMask);
+            }
+        }
+
         private void ApplyInputMask()
         {
-            // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
-            // used elsewhere so that solo buttons are treated as if they were regular buttons
-            byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
-
-            // EffectiveButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
-            EffectiveButtonMask = (byte) (InputButtonMask | soloButtonMask);
+            EffectiveButtonMask = PlayerButtonMask;
 
             // No other frets are held, enable the "open fret"
             if ((EffectiveButtonMask & ~OPEN_MASK) == 0)
