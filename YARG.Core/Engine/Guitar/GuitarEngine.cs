@@ -53,7 +53,7 @@ namespace YARG.Core.Engine.Guitar
         /// Whether the engine is playing the current notes on the player's behalf because they are
         /// part of a freestyle solo. Player frets are still tracked, but they don't affect hit logic.
         /// </summary>
-        public bool IsFreestyleActive => FreestyleNote() != null;
+        public bool IsFreestyleActive => FindActiveSoloNote() != null;
 
         /// <summary>
         /// The chart time at which the freestyle solo phrase being played started, or null when the
@@ -62,7 +62,7 @@ namespace YARG.Core.Engine.Guitar
         /// </summary>
         public double? FreestyleSoloTime => _freestyleSoloTime;
 
-        private GuitarNote? FreestyleNote()
+        private GuitarNote? FindActiveSoloNote()
         {
             if (!EngineParameters.FreestyleSolos)
             {
@@ -258,7 +258,7 @@ namespace YARG.Core.Engine.Guitar
         /// </summary>
         protected void UpdateFreestyleState()
         {
-            var note = FreestyleNote();
+            var note = FindActiveSoloNote();
             bool wasActive = _freestyleSoloTime.HasValue;
 
             if (!wasActive && note != null)
