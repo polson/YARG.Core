@@ -13,11 +13,12 @@ namespace YARG.Core.Engine.Guitar
         public readonly bool AntiGhosting;
         public readonly bool SoloTaps;
         public readonly bool NoStarPowerOverlap;
+        public readonly bool FreestyleSolos;
 
         public GuitarEngineParameters(HitWindowSettings hitWindow, int maxMultiplier, double spWhammyBuffer,
             double sustainDropLeniency, float[] starMultiplierThresholds, float[] soloBonusStarMultiplierThresholds, double hopoLeniency, double strumLeniency,
             double strumLeniencySmall, bool infiniteFrontEnd, bool antiGhosting, bool soloTaps, bool noStarPowerOverlap,
-            bool enableLanes)
+            bool enableLanes, bool freestyleSolos = false)
             : base(hitWindow, maxMultiplier, spWhammyBuffer, sustainDropLeniency, starMultiplierThresholds, soloBonusStarMultiplierThresholds, enableLanes)
         {
             HopoLeniency = hopoLeniency;
@@ -30,6 +31,7 @@ namespace YARG.Core.Engine.Guitar
 
             SoloTaps = soloTaps;
             NoStarPowerOverlap = noStarPowerOverlap;
+            FreestyleSolos = freestyleSolos;
         }
 
         public GuitarEngineParameters(ref FixedArrayStream stream, int version)
@@ -45,6 +47,10 @@ namespace YARG.Core.Engine.Guitar
             SoloTaps = stream.ReadBoolean();
             if (version >= 9) {
                 NoStarPowerOverlap = stream.ReadBoolean();
+            }
+            if (version >= 20)
+            {
+                FreestyleSolos = stream.ReadBoolean();
             }
         }
 
@@ -62,6 +68,7 @@ namespace YARG.Core.Engine.Guitar
 
             writer.Write(SoloTaps);
             writer.Write(NoStarPowerOverlap);
+            writer.Write(FreestyleSolos);
         }
 
         public override string ToString()
@@ -72,6 +79,7 @@ namespace YARG.Core.Engine.Guitar
                 $"Anti-ghosting: {AntiGhosting}\n" +
                 $"Solo taps: {SoloTaps}\n" +
                 $"No star power overlap: {NoStarPowerOverlap}\n" +
+                $"Freestyle solos: {FreestyleSolos}\n" +
                 $"Hopo leniency: {HopoLeniency}\n" +
                 $"Strum leniency: {StrumLeniency}\n" +
                 $"Strum leniency (small): {StrumLeniencySmall}\n" +

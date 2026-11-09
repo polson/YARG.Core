@@ -47,6 +47,44 @@ namespace YARG.Core.Engine.Guitar
 
         protected double FrontEndExpireTime;
 
+        private double? _freestyleSoloTime;
+
+        /// <summary>
+        /// Whether the engine is playing the current notes on the player's behalf because they are
+        /// part of a freestyle solo. Player frets are still tracked, but they don't affect hit logic.
+        /// </summary>
+        public bool IsFreestyleActive => FindActiveSoloNote() != null;
+
+        /// <summary>
+        /// The chart time at which the freestyle solo phrase being played started, or null when the
+        /// engine is not playing one. This is the phrase's start rather than the played note's time,
+        /// so it stays valid for as long as the phrase's last note sustains.
+        /// </summary>
+        public double? FreestyleSoloTime => _freestyleSoloTime;
+
+        private GuitarNote? FindActiveSoloNote()
+        {
+            if (!EngineParameters.FreestyleSolos)
+            {
+                return null;
+            }
+
+            if (NoteIndex < Notes.Count && Notes[NoteIndex].IsSolo)
+            {
+                return Notes[NoteIndex];
+            }
+
+            foreach (var sustain in ActiveSustains)
+            {
+                if (sustain.Note.IsSolo)
+                {
+                    return sustain.Note;
+                }
+            }
+
+            return null;
+        }
+
         protected GuitarEngine(InstrumentDifficulty<GuitarNote> chart, SyncTrack syncTrack,
             GuitarEngineParameters engineParameters, bool isBot)
             : base(chart, syncTrack, engineParameters, false, isBot)
@@ -103,6 +141,8 @@ namespace YARG.Core.Engine.Guitar
             HopoLeniencyTimer.Reset();
 
             FrontEndExpireTime = 0;
+
+            _freestyleSoloTime = null;
 
             ActiveSustains.Clear();
 
@@ -200,6 +240,52 @@ namespace YARG.Core.Engine.Guitar
             UpdateMultiplier();
 
             OnOverstrum?.Invoke();
+        }
+
+        private bool IsFreestyleAutoPlayed(GuitarNote note)
+        {
+            return EngineParameters.FreestyleSolos && note.ParentOrSelf.IsSolo;
+        }
+
+        public override bool IsAutoPlayed(GuitarNote note)
+        {
+            return IsBot || IsFreestyleAutoPlayed(note);
+        }
+
+        /// <summary>
+        /// Tracks entering and leaving a freestyle solo. On leaving, the player's held frets
+        /// take over from the frets the engine was holding.
+        /// </summary>
+        protected void UpdateFreestyleState()
+        {
+            var note = FindActiveSoloNote();
+            bool wasActive = _freestyleSoloTime.HasValue;
+
+            if (!wasActive && note != null)
+            {
+                _freestyleSoloTime = SoloPhraseStart(note).Time;
+                OnFreestyleStarted();
+            }
+            else if (wasActive && note == null)
+            {
+                _freestyleSoloTime = null;
+                LastButtonMask = EffectiveButtonMask;
+                ApplyInputMask();
+            }
+        }
+
+        protected virtual void OnFreestyleStarted()
+        {
+        }
+
+        private static GuitarNote SoloPhraseStart(GuitarNote note)
+        {
+            while (note.PreviousNote != null && note.PreviousNote.IsSolo)
+            {
+                note = note.PreviousNote;
+            }
+
+            return note;
         }
 
         protected override bool CanSustainHold(GuitarNote note)
@@ -445,6 +531,12 @@ namespace YARG.Core.Engine.Guitar
 
         protected void ToggleFret(int fret, bool active)
         {
+            SetInputFret(fret, active);
+            ApplyInputMask();
+        }
+
+        protected void SetInputFret(int fret, bool active)
+        {
             if (active)
             {
                 InputButtonMask |= (ushort) (1 << fret);
@@ -454,18 +546,60 @@ namespace YARG.Core.Engine.Guitar
                 InputButtonMask &= (ushort) ~(1 << fret);
             }
 
-            // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
-            // used elsewhere so that solo buttons are treated as if they were regular buttons
-            byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
-
-            // EffectiveButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
-            EffectiveButtonMask = (byte) (InputButtonMask | soloButtonMask);
             StandardButtonHeld = (InputButtonMask & ~OPEN_MASK & ~SOLO_MASK) > 0;
+        }
+
+        /// <summary>
+        /// The frets the player is physically holding, with solo buttons folded onto their regular
+        /// rows, before the open fret adjustment.
+        /// </summary>
+        public byte PlayerButtonMask
+        {
+            get
+            {
+                // What we're doing here is transposing bits 10-14 of the input mask down to 0-4 of the effective mask
+                // used elsewhere so that solo buttons are treated as if they were regular buttons
+                byte soloButtonMask = (byte) (InputButtonMask >> (int) GuitarAction.SoloGreenFret);
+
+                // PlayerButtonMask is the bitwise or of the low 8 bits of InputButtonMask and soloButtonMask
+                return (byte) (InputButtonMask | soloButtonMask);
+            }
+        }
+
+        private void ApplyInputMask()
+        {
+            EffectiveButtonMask = PlayerButtonMask;
+
+            // No other frets are held, enable the "open fret"
+            if ((EffectiveButtonMask & ~OPEN_MASK) == 0)
+            {
+                EffectiveButtonMask |= OPEN_MASK;
+            }
+            else
+            {
+                // Some frets are held, disable the "open fret"
+                EffectiveButtonMask &= unchecked((byte) ~OPEN_MASK);
+            }
         }
 
         public bool IsFretHeld(GuitarAction fret)
         {
             return (EffectiveButtonMask & (1 << (int) fret)) != 0;
+        }
+
+        public static int FretRowMask(GuitarAction action)
+        {
+            if (action >= GuitarAction.SoloGreenFret && action <= GuitarAction.SoloOrangeFret)
+            {
+                return 1 << (action - GuitarAction.SoloGreenFret);
+            }
+
+            if (action >= GuitarAction.Fret1 && action <= GuitarAction.Fret6)
+            {
+                return 1 << (int) action;
+            }
+
+            return 0;
         }
 
         protected int GetLaneMask()
