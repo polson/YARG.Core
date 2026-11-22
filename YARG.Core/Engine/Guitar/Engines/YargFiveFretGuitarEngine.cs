@@ -33,16 +33,24 @@ namespace YARG.Core.Engine.Guitar.Engines
             _botBaseMask = EffectiveButtonMask;
         }
 
+        protected override void OnFreestyleStarted()
+        {
+            _botBaseMask = EffectiveButtonMask;
+        }
+
         protected override void UpdateBot(double time)
         {
-            if (!IsBot)
+            if (!IsBot && !IsFreestyleActive)
             {
                 return;
             }
 
             if (NoteIndex < Notes.Count)
             {
-                IsStarPowerInputActive = CanStarPowerActivate && !IsStarPowerInputActive;
+                if (IsBot)
+                {
+                    IsStarPowerInputActive = CanStarPowerActivate && !IsStarPowerInputActive;
+                }
 
                 var note = Notes[NoteIndex];
 
@@ -100,6 +108,20 @@ namespace YARG.Core.Engine.Guitar.Engines
         {
             var action = gameInput.GetAction<GuitarAction>();
 
+            if (IsFreestyleActive)
+            {
+                if (IsFretInput(gameInput))
+                {
+                    SetInputFret(gameInput.Action, gameInput.Button);
+                    return;
+                }
+
+                if (IsStrumInput(gameInput))
+                {
+                    return;
+                }
+            }
+
             bool newNoteInput = false;
 
             // Star power
@@ -123,17 +145,6 @@ namespace YARG.Core.Engine.Guitar.Engines
                 IsFretPress = gameInput.Button;
 
                 ToggleFret(gameInput.Action, gameInput.Button);
-
-                // No other frets are held, enable the "open fret"
-                if ((EffectiveButtonMask & ~OPEN_MASK) == 0)
-                {
-                    EffectiveButtonMask |= OPEN_MASK;
-                }
-                else
-                {
-                    // Some frets are held, disable the "open fret"
-                    EffectiveButtonMask &= unchecked((byte) ~OPEN_MASK);
-                }
 
                 newNoteInput = true;
             }
@@ -160,6 +171,7 @@ namespace YARG.Core.Engine.Guitar.Engines
 
         protected override void UpdateHitLogic(double time)
         {
+            UpdateFreestyleState();
             UpdateTimers();
 
             bool strumEatenByHopo = false;

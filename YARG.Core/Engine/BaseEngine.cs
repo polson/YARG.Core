@@ -56,6 +56,9 @@ namespace YARG.Core.Engine
         public readonly uint TicksPerFullSpBar;
 
         protected List<SoloSection> Solos = new();
+
+        /// <summary>The chart's solo phrases, in tick order. One owner for where the solos are.</summary>
+        public IReadOnlyList<SoloSection> SoloPhrases => Solos;
         protected List<WaitCountdown> WaitCountdowns = new();
         protected List<CodaSection> Codas = new();
 
